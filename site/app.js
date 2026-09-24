@@ -103,7 +103,7 @@
 
     app.innerHTML = `
       <section class="intro">
-        <h1 class="wordmark" lang="or">ପାଇଡ଼ା</h1>
+        <h1 class="wordmark" lang="or">ପଇଦା</h1>
         <div>
           <p class="lede">The families of Paida village, from the oldest ancestors anyone remembers to the children born today.</p>
           <p class="meta">${everyone.length} people across ${gens} generations${earliest < 9999 ? `, going back to ${earliest}` : ''}.</p>

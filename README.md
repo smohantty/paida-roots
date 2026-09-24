@@ -1,4 +1,4 @@
-# Paida Roots · ପାଇଡ଼ା
+# Paida Roots · ପଇଦା
 
 **The families and story of Paida village**, recorded so this knowledge is not lost when our elders are gone.
 
