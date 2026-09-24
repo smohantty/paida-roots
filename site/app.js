@@ -149,21 +149,34 @@
           <button class="icon-btn" type="button" data-zoom="1" aria-label="Zoom in">+</button>
         </div>
       </div>
-      <div class="stage ${treeAnimated ? '' : 'animate'}" tabindex="0" aria-label="Family tree. Drag or scroll to move around.">
+      <div class="stage ${treeAnimated ? '' : 'animate'}" tabindex="0" aria-label="Family tree. Drag or scroll to move around, pinch to zoom.">
         <div class="tree"><ul>${branch(rootId, 0)}</ul></div>
       </div>
       <div class="legend">
         <span><i style="background:var(--indigo)"></i>Male</span>
         <span><i style="background:var(--sindoor)"></i>Female</span>
         <span><i class="dash"></i>Married into the family</span>
-        <span>Drag to move around, and tap anyone to open their page.</span>
+        <span>Drag to move around, pinch to zoom, and tap anyone to open their page.</span>
       </div>`;
     treeAnimated = true;
 
     const stage = app.querySelector('.stage');
     const tree = app.querySelector('.tree');
     const center = () => { stage.scrollLeft = (stage.scrollWidth - stage.clientWidth) / 2; };
-    const setZoom = (z) => { zoom = Math.min(1.6, Math.max(0.35, z)); tree.style.zoom = zoom; center(); };
+    const clampZoom = (z) => Math.min(1.8, Math.max(0.2, z));
+    const setZoom = (z) => { zoom = clampZoom(z); tree.style.zoom = zoom; center(); };
+    // Zoom while keeping the point under (cx, cy) still, so pinching feels anchored to the fingers.
+    const zoomAt = (z, cx, cy) => {
+      const r = stage.getBoundingClientRect();
+      const mx = cx - r.left;
+      const my = cy - r.top;
+      const x = (stage.scrollLeft + mx) / zoom;
+      const y = (stage.scrollTop + my) / zoom;
+      zoom = clampZoom(z);
+      tree.style.zoom = zoom;
+      stage.scrollLeft = x * zoom - mx;
+      stage.scrollTop = y * zoom - my;
+    };
     const fit = (floor = 0) => {
       tree.style.zoom = 1;
       setZoom(Math.max(floor, Math.min(1, (stage.clientWidth - 8) / tree.scrollWidth, (stage.clientHeight - 8) / tree.scrollHeight)));
@@ -182,6 +195,40 @@
       if (e.pointerType !== 'mouse' || e.button !== 0) return;
       drag = { stage, x: e.clientX, y: e.clientY, left: stage.scrollLeft, top: stage.scrollTop, moved: false };
     });
+
+    // Pinch with two fingers to zoom. One finger still scrolls natively.
+    let pinch = null;
+    const gap = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    const mid = (t) => [(t[0].clientX + t[1].clientX) / 2, (t[0].clientY + t[1].clientY) / 2];
+    stage.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 2) return;
+      pinch = { dist: gap(e.touches), zoom, mid: mid(e.touches) };
+      userZoomed = true;
+    }, { passive: true });
+    stage.addEventListener('touchmove', (e) => {
+      if (!pinch || e.touches.length !== 2) return;
+      e.preventDefault();
+      const scale = gap(e.touches) / pinch.dist;
+      const [mx, my] = mid(e.touches);
+      zoomAt(pinch.zoom * scale, mx, my);
+      // Moving both fingers together also pans.
+      stage.scrollLeft -= mx - pinch.mid[0];
+      stage.scrollTop -= my - pinch.mid[1];
+      pinch.mid = [mx, my];
+    }, { passive: false });
+    // Stop iPhone Safari from zooming the whole page instead of the tree.
+    stage.addEventListener('gesturestart', (e) => e.preventDefault());
+    const endPinch = (e) => { if (e.touches.length < 2) pinch = null; };
+    stage.addEventListener('touchend', endPinch);
+    stage.addEventListener('touchcancel', endPinch);
+
+    // Trackpad pinch (and Ctrl + scroll wheel) on computers.
+    stage.addEventListener('wheel', (e) => {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      userZoomed = true;
+      zoomAt(zoom * Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY);
+    }, { passive: false });
   }
 
   // Drag to pan the tree with a mouse; touch screens already pan natively.
