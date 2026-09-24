@@ -1,0 +1,9 @@
+# SAMPLE DATA
+id: P0006
+name:
+  en: Gopal Mishra
+  or: ଗୋପାଳ ମିଶ୍ର
+gender: M
+born: { year: 1930, approx: true }
+died: { year: 1990, approx: true }
+birthplace: balasore

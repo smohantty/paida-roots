@@ -1,0 +1,9 @@
+# SAMPLE DATA
+id: P0007
+name:
+  en: Bijay Das
+  or: ବିଜୟ ଦାସ
+gender: M
+born: { year: 1940 }
+died: { year: 2010 }
+occupation: Priest at the village temple

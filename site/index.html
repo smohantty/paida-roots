@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paida Roots</title>
+  <meta name="description" content="The families and story of Paida village, recorded so they are never lost.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌳</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600&family=Noto+Sans+Oriya:wght@400;600&family=Noto+Serif:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="#/">
+      <span class="brand-en">Paida Roots</span>
+      <span class="brand-or">ପାଇଡ଼ା</span>
+    </a>
+    <nav>
+      <a href="#/" data-nav="tree">Tree</a>
+      <a href="#/people" data-nav="people">People</a>
+      <a href="#/stories" data-nav="stories">Stories</a>
+      <a href="#/about" data-nav="about">About</a>
+    </nav>
+    <div class="tools">
+      <div class="search">
+        <input id="q" type="search" placeholder="Search a name…" autocomplete="off" aria-label="Search people">
+        <ul id="results" hidden></ul>
+      </div>
+      <button id="lang" type="button" title="Switch names between English and Odia">ଓଡ଼ିଆ</button>
+    </div>
+  </header>
+  <main id="app"><p class="muted">Loading…</p></main>
+  <footer class="foot">
+    Paida Roots — the families and story of Paida village. <span id="updated"></span>
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>

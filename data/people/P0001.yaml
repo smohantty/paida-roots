@@ -1,0 +1,13 @@
+# SAMPLE DATA — delete and replace with real people.
+id: P0001
+name:
+  en: Jagannath Das
+  or: ଜଗନ୍ନାଥ ଦାସ
+gender: M
+born: { year: 1905, approx: true }
+died: { year: 1978 }
+sahi: Bada Sahi
+occupation: Farmer
+note: >
+  Remembered for digging the first well in Bada Sahi after the drought.
+sources: [S001]

@@ -1,0 +1,8 @@
+# Where a fact came from. Refer to these ids from a person's `sources` list.
+S001:
+  title: Sample interview with an elder
+  by: (name of the person who told us)
+  recorded_by: (your name)
+  date: 2026-09-24
+  kind: oral            # oral | document | photo | audio | video
+  note: Replace with a real source. Put audio files in media/ or link to the Internet Archive.

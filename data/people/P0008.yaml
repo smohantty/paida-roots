@@ -1,0 +1,9 @@
+# SAMPLE DATA — a living person: birth year only, never a full date.
+id: P0008
+name:
+  en: Prakash Das
+  or: ପ୍ରକାଶ ଦାସ
+gender: M
+born: { year: 1962 }
+sahi: Bada Sahi
+occupation: Engineer

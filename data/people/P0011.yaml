@@ -1,0 +1,7 @@
+# SAMPLE DATA
+id: P0011
+name:
+  en: Amit Das
+  or: ଅମିତ ଦାସ
+gender: M
+born: { year: 1992 }

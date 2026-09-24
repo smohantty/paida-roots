@@ -1,0 +1,16 @@
+{
+  "name": "paida-roots",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The families and story of Paida village",
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/build.mjs --check",
+    "build": "node scripts/build.mjs",
+    "serve": "node scripts/build.mjs && npx --yes serve dist"
+  },
+  "dependencies": {
+    "marked": "^14.1.0",
+    "yaml": "^2.5.0"
+  }
+}

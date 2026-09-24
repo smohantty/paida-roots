@@ -1,0 +1,5 @@
+# SAMPLE DATA
+id: F0001
+partners: [P0001, P0002]
+married: { year: 1928, approx: true }
+children: [P0003, P0005, P0007]

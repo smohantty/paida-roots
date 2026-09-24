@@ -1,0 +1,12 @@
+# SAMPLE DATA
+id: P0003
+name:
+  en: Harihar Das
+  or: ହରିହର ଦାସ
+alias: [Hari Bhai]
+gender: M
+born: { year: 1932 }
+died: { year: 2004 }
+sahi: Bada Sahi
+occupation: School teacher
+sources: [S001]

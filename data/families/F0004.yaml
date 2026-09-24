@@ -1,0 +1,5 @@
+# SAMPLE DATA
+id: F0004
+partners: [P0008, P0010]
+married: { year: 1990 }
+children: [P0011]

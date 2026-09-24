@@ -1,0 +1,12 @@
+# Places referenced by people (birthplace) and stories.
+# Key = short id used in person files. Keep keys lowercase, no spaces.
+paida:
+  en: Paida
+  or: ପାଇଡ଼ା
+  note: Our village.
+nuagaon:
+  en: Nuagaon (sample)
+  note: Sample place — replace with real ones.
+balasore:
+  en: Balasore
+  or: ବାଲେଶ୍ୱର
