@@ -11,7 +11,17 @@
 
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const P = (id) => D.people[id];
-  const nm = (p) => (lang === 'or' && p.name.or) || p.name.en;
+  const nm = (p) => {
+    if (lang !== 'or') return p.name.en;
+    if (p.name.or) return p.name.or;
+    // "Wife of X" placeholder → "Xଙ୍କ ସ୍ତ୍ରୀ" using the spouse's Odia name.
+    if (unnamed(p)) {
+      const spouse = p.families.map((f) => D.families[f].partners.find((x) => x !== p.id)).find(Boolean);
+      if (spouse && P(spouse).name.or) return `${P(spouse).name.or}ଙ୍କ ${spouseWordOr(p)}`;
+    }
+    return p.name.en;
+  };
+  const spouseWordOr = (p) => (p.gender === 'M' ? 'ସ୍ୱାମୀ' : 'ସ୍ତ୍ରୀ');
   const altNm = (p) => (lang === 'or' ? p.name.en : p.name.or) || '';
   const yr = (d) => (d?.year ? (d.approx ? 'c. ' : '') + d.year : '');
   const lifespan = (p) => {
@@ -105,7 +115,7 @@
   const spouseNode = (id) => {
     const p = P(id);
     if (!unnamed(p)) return node(id, 'inlaw');
-    const label = p.name.en.split(' ')[0];
+    const label = lang === 'or' ? spouseWordOr(p) : p.name.en.split(' ')[0];
     return `<a class="node inlaw tag g-${esc(p.gender || 'U')}" href="#/person/${id}" title="${esc(p.name.en)} (name not recorded yet)">${esc(label)}</a>`;
   };
   const nodes = (ids) => (ids.length
