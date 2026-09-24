@@ -57,6 +57,12 @@ married: { year: 1975 }
 children: [P0014, P0015]
 ```
 
+### Daughters
+
+Record daughters by **first name only** (e.g. `en: Lata`), listed as children in their parents' family file. Once married, a daughter belongs to her husband's village and family history, so we don't add her husband or children here.
+
+Wives who married **into** Paida are recorded in full. Until her name is known, use a placeholder: `en: Wife of <husband's name>` with `note: Name not recorded yet.`
+
 ### More than one marriage
 
 Make **one family file per marriage**. This covers someone who remarried after their spouse died, a man with two wives at the same time, or a widow who remarried. Each file lists only the children of that marriage, so everyone's mother and father stay clear.
