@@ -46,6 +46,19 @@
     }
     return [...out];
   };
+  // First cousins (same grandparents, different parents), grouped by the parent's sibling they come through.
+  const cousinGroups = (id) => {
+    const skip = new Set([id, ...siblings(id), ...halfSiblings(id)]);
+    const groups = [];
+    for (const parent of parents(id)) {
+      for (const uncle of [...siblings(parent), ...halfSiblings(parent)].sort(byBirth)) {
+        const kids = children(uncle).filter((c) => !skip.has(c));
+        kids.forEach((c) => skip.add(c));
+        if (kids.length) groups.push({ via: uncle, kids });
+      }
+    }
+    return groups;
+  };
   // A person's marriages, in order, as { family, spouse }.
   const marriages = (id) => P(id).families.map((f) => ({ family: D.families[f], spouse: D.families[f].partners.find((x) => x !== id) }));
   const ORD = ['1st', '2nd', '3rd', '4th', '5th'];
@@ -288,6 +301,14 @@
     }).join('');
   }
 
+  function cousinBlock(id) {
+    const groups = cousinGroups(id);
+    if (!groups.length) return '';
+    return `<div class="rel"><h3>Cousins (same grandparents)</h3>
+      ${groups.map(({ via, kids }) => `<p class="rel-sub">Children of <a href="#/person/${via}">${esc(nm(P(via)))}</a></p>${nodes(kids)}`).join('')}
+    </div>`;
+  }
+
   function viewPerson(id) {
     const p = P(id);
     if (!p) {
@@ -337,6 +358,7 @@
           ${marriageBlocks(id)}
           <div class="rel"><h3>Brothers and sisters</h3>${nodes(siblings(id))}</div>
           ${halfSiblings(id).length ? `<div class="rel"><h3>Half brothers and sisters</h3>${nodes(halfSiblings(id))}</div>` : ''}
+          ${cousinBlock(id)}
         </section>
       </div>
       ${srcs.length ? `<section class="sources"><h2>Where this comes from</h2><ul>${srcs.map((s) =>
