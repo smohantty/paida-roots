@@ -60,6 +60,28 @@ married: { year: 1975 }
 children: [P0014, P0015]
 ```
 
+### More than one marriage
+
+Make **one family file per marriage**. This covers someone who remarried after their spouse died, a man with two wives at the same time, or a widow who remarried. Each file lists only the children of that marriage, so everyone's mother and father stay clear.
+
+```yaml
+# data/families/F0005.yaml — Bijay's first marriage
+id: F0005
+partners: [P0007, P0012]      # Bijay + Lakshmi
+married: { year: 1962 }
+children: [P0013]
+
+# data/families/F0006.yaml — Bijay's second marriage, after Lakshmi died
+id: F0006
+partners: [P0007, P0014]      # Bijay + Gita
+married: { year: 1972 }
+children: [P0015]
+```
+
+Marriages are shown in order of `married` year (add an approximate year if you can), so the site labels them "1st wife", "2nd wife" and so on. In the tree, the person branches into each spouse with that marriage's children below. On the person page, each marriage has its own section, and children of the other marriages appear as half brothers and sisters.
+
+If the other parent isn't known, list just one partner: `partners: [P0007]`.
+
 ### Add a story
 
 Add a Markdown file to `stories/`, e.g. `02-the-great-flood.md`. The first `# Heading` becomes its title, and the number at the front sets its place in the list.

@@ -1,0 +1,7 @@
+# SAMPLE DATA
+id: P0013
+name:
+  en: Rabi Das
+  or: ରବି ଦାସ
+gender: M
+born: { year: 1965 }

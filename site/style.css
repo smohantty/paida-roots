@@ -186,7 +186,7 @@ select { max-width: 100%; }
 .tree { display: inline-block; min-width: 100%; padding: var(--s6) var(--s5); }
 .tree ul { display: flex; justify-content: center; margin: 0; padding: 28px 0 0; position: relative; }
 .tree > ul { padding-top: 0; }
-.tree li { list-style: none; position: relative; padding: 28px 10px 0; text-align: center; }
+.tree li { flex: none; list-style: none; position: relative; padding: 28px 10px 0; text-align: center; }
 .tree > ul > li { padding-top: 0; }
 .tree li::before, .tree li::after {
   content: ""; position: absolute; top: 0; right: 50%; width: 50%; height: 28px;
@@ -204,6 +204,12 @@ select { max-width: 100%; }
 }
 .couple { display: inline-flex; align-items: center; }
 .tie { width: 14px; height: 2px; background: var(--branch); }
+.union-box { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; }
+.union-tag {
+  font-size: .72rem; font-weight: 600; color: var(--paddy);
+  background: var(--paddy-soft); padding: 1px 9px; border-radius: var(--r-pill); white-space: nowrap;
+}
+.node.unknown { color: var(--muted); font-size: .85rem; padding: 10px 16px; min-width: 0; }
 
 .animate .tree li > .couple { animation: grow .5s cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--d) * 140ms); }
 @keyframes grow { from { opacity: 0; transform: translateY(8px) scale(.96); } }
@@ -254,6 +260,9 @@ select { max-width: 100%; }
 .rel h3 { font-size: .9rem; font-weight: 600; color: var(--ink-2); margin-bottom: var(--s2); }
 .nodes { display: flex; flex-wrap: wrap; gap: var(--s2); }
 .none { color: var(--muted); font-size: .9rem; }
+.marriage { padding-left: var(--s3); border-left: 2px solid var(--branch); }
+.rel-sub { font-size: .82rem; color: var(--muted); margin: var(--s3) 0 6px; }
+.rel-note { font-size: .85rem; color: var(--ink-2); margin-top: 6px; }
 
 .sources { margin-top: var(--s7); max-width: 70ch; }
 .sources ul { margin: 0; padding-left: 1.2em; color: var(--ink-2); }

@@ -6,6 +6,7 @@
   let lang = 'en';
   try { lang = localStorage.getItem('lang') || 'en'; } catch {}
   let zoom = 1;
+  let userZoomed = false; // until someone uses the zoom buttons, fit the tree to the box
   let treeAnimated = false;
 
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -35,6 +36,21 @@
   const spouses = (id) => P(id).families.flatMap((f) => D.families[f].partners.filter((x) => x !== id));
   const children = (id) => P(id).families.flatMap((f) => D.families[f].children);
   const siblings = (id) => (P(id).parentFamily ? D.families[P(id).parentFamily].children.filter((x) => x !== id) : []);
+  // Children of a parent's other marriages.
+  const halfSiblings = (id) => {
+    const pf = P(id).parentFamily;
+    if (!pf) return [];
+    const out = new Set();
+    for (const parent of D.families[pf].partners) {
+      for (const f of P(parent).families) if (f !== pf) D.families[f].children.forEach((c) => out.add(c));
+    }
+    return [...out];
+  };
+  // A person's marriages, in order, as { family, spouse }.
+  const marriages = (id) => P(id).families.map((f) => ({ family: D.families[f], spouse: D.families[f].partners.find((x) => x !== id) }));
+  const ORD = ['1st', '2nd', '3rd', '4th', '5th'];
+  const ORD_WORD = ['First', 'Second', 'Third', 'Fourth', 'Fifth'];
+  const spouseWord = (sid) => ({ M: 'husband', F: 'wife' }[sid && P(sid).gender] || 'spouse');
   const byBirth = (a, b) => (P(a).born?.year ?? 9999) - (P(b).born?.year ?? 9999);
 
   // Line of ancestors, preferring the parent who is themselves a child of the tree.
@@ -86,12 +102,27 @@
     }
     rootId = rootId && P(rootId) ? rootId : roots[0];
     const seen = new Set();
+    const kidsList = (kids, depth) => (kids.length ? `<ul>${[...kids].sort(byBirth).map((k) => branch(k, depth)).join('')}</ul>` : '');
     const branch = (id, depth) => {
       if (seen.has(id)) return `<li style="--d:${depth}"><div class="couple">${node(id)}</div></li>`;
       seen.add(id);
-      const couple = [node(id), ...spouses(id).map((s) => `<span class="tie"></span>${node(s, 'inlaw')}`)].join('');
-      const kids = children(id).sort(byBirth);
-      return `<li style="--d:${depth}"><div class="couple">${couple}</div>${kids.length ? `<ul>${kids.map((k) => branch(k, depth + 1)).join('')}</ul>` : ''}</li>`;
+      const ms = marriages(id);
+      if (ms.length <= 1) {
+        // One marriage: show the couple side by side with their children below.
+        const sp = ms[0]?.spouse;
+        const couple = node(id) + (sp ? `<span class="tie"></span>${node(sp, 'inlaw')}` : '');
+        return `<li style="--d:${depth}"><div class="couple">${couple}</div>${kidsList(ms[0]?.family.children ?? [], depth + 1)}</li>`;
+      }
+      // Several marriages: branch into each spouse, with that marriage's children under them.
+      const unions = ms.map(({ family, spouse }, i) => `
+        <li style="--d:${depth}" class="union">
+          <div class="couple"><div class="union-box">
+            <span class="union-tag">${ORD[i] ?? `${i + 1}th`} ${spouseWord(spouse)}${family.married?.year ? `, m. ${yr(family.married)}` : ''}</span>
+            ${spouse ? node(spouse, 'inlaw') : '<span class="node inlaw unknown">Not recorded</span>'}
+          </div></div>
+          ${kidsList(family.children, depth + 1)}
+        </li>`).join('');
+      return `<li style="--d:${depth}"><div class="couple">${node(id)}</div><ul>${unions}</ul></li>`;
     };
     const everyone = Object.values(D.people);
     const gens = Math.max(...everyone.map((p) => p.generation));
@@ -133,15 +164,16 @@
     const tree = app.querySelector('.tree');
     const center = () => { stage.scrollLeft = (stage.scrollWidth - stage.clientWidth) / 2; };
     const setZoom = (z) => { zoom = Math.min(1.6, Math.max(0.35, z)); tree.style.zoom = zoom; center(); };
-    const fit = () => {
+    const fit = (floor = 0) => {
       tree.style.zoom = 1;
-      setZoom(Math.min(1, (stage.clientWidth - 8) / tree.scrollWidth, (stage.clientHeight - 8) / tree.scrollHeight));
+      setZoom(Math.max(floor, Math.min(1, (stage.clientWidth - 8) / tree.scrollWidth, (stage.clientHeight - 8) / tree.scrollHeight)));
     };
-    setZoom(zoom);
+    userZoomed ? setZoom(zoom) : fit(0.6);
     app.querySelector('.zoom').onclick = (e) => {
       const b = e.target.closest('[data-zoom]');
       if (!b) return;
       const step = Number(b.dataset.zoom);
+      userZoomed = true;
       step === 0 ? fit() : setZoom(zoom + step * 0.15);
     };
     document.getElementById('root').onchange = (e) => (location.hash = `#/tree/${e.target.value}`);
@@ -176,6 +208,26 @@
     drag.stage.classList.remove('dragging');
     drag = null;
   });
+
+  function marriageBlocks(id) {
+    const ms = marriages(id);
+    if (ms.length <= 1) {
+      return `<div class="rel"><h3>Married to</h3>${nodes(ms[0]?.spouse ? [ms[0].spouse] : [])}</div>
+        <div class="rel"><h3>Children</h3>${nodes(ms[0]?.family.children ?? [])}</div>`;
+    }
+    return ms.map(({ family, spouse }, i) => {
+      const s = spouse && P(spouse);
+      const heading = `${ORD_WORD[i] ?? `Marriage ${i + 1}`}${ORD_WORD[i] ? ' marriage' : ''}${family.married?.year ? `, ${yr(family.married)}` : ''}`;
+      const ended = s?.died?.year && ms[i + 1] ? `<p class="rel-note">${esc(nm(s))} died in ${yr(s.died)}.</p>` : '';
+      return `<div class="rel marriage">
+        <h3>${heading}</h3>
+        ${nodes(spouse ? [spouse] : [])}
+        ${ended}
+        <p class="rel-sub">Children</p>
+        ${nodes(family.children)}
+      </div>`;
+    }).join('');
+  }
 
   function viewPerson(id) {
     const p = P(id);
@@ -222,9 +274,9 @@
         </section>
         <section class="family" aria-label="Family">
           <div class="rel"><h3>Parents</h3>${nodes(parents(id))}</div>
-          <div class="rel"><h3>Married to</h3>${nodes(spouses(id))}</div>
-          <div class="rel"><h3>Children</h3>${nodes(children(id))}</div>
+          ${marriageBlocks(id)}
           <div class="rel"><h3>Brothers and sisters</h3>${nodes(siblings(id))}</div>
+          ${halfSiblings(id).length ? `<div class="rel"><h3>Half brothers and sisters</h3>${nodes(halfSiblings(id))}</div>` : ''}
         </section>
       </div>
       ${srcs.length ? `<section class="sources"><h2>Where this comes from</h2><ul>${srcs.map((s) =>

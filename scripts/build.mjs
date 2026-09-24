@@ -113,8 +113,17 @@ for (const f of Object.values(families)) {
   if (!partners || partners.length < 1 || partners.length > 2) err(w, 'partners must list 1 or 2 person ids');
   if (children === null) err(w, 'children must be a list (use [] for none)');
   for (const id of partners ?? []) {
-    if (!people[id]) err(w, `partner ${id} does not exist in data/people/`);
-    else (familiesOf[id] ??= []).push(f.id);
+    if (!people[id]) { err(w, `partner ${id} does not exist in data/people/`); continue; }
+    (familiesOf[id] ??= []).push(f.id);
+    const p = people[id];
+    if (f.married?.year && p.died?.year && f.married.year > p.died.year + (f.married.approx || p.died.approx ? 5 : 0)) {
+      err(w, `married in ${f.married.year}, but partner ${id} died in ${p.died.year}`);
+    }
+  }
+  if (partners?.length === 2) {
+    const pair = [...partners].sort().join('+');
+    const dup = Object.values(families).find((o) => o.id < f.id && o.partners?.length === 2 && [...o.partners].sort().join('+') === pair);
+    if (dup) err(w, `${partners.join(' and ')} already have a family file (${dup.id}) — put all their children there`);
   }
   for (const id of children ?? []) {
     if (!people[id]) { err(w, `child ${id} does not exist in data/people/`); continue; }
@@ -135,6 +144,11 @@ for (const f of Object.values(families)) {
   }
   f.partners = partners ?? [];
   f.children = children ?? [];
+}
+
+// A person's marriages in order: by marriage year, then by family id.
+for (const list of Object.values(familiesOf)) {
+  list.sort((a, b) => (families[a].married?.year ?? 9999) - (families[b].married?.year ?? 9999) || a.localeCompare(b));
 }
 
 // No one can be their own ancestor.
