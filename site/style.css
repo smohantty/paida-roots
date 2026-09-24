@@ -144,6 +144,7 @@ main { flex: 1; width: 100%; max-width: 1180px; margin: 0 auto; padding: var(--s
 .node .tx { display: flex; flex-direction: column; min-width: 0; }
 .node .nm { font-weight: 600; font-size: .92rem; line-height: 1.25; }
 .node .yr { font-size: .78rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.node .went { font-size: .74rem; color: var(--paddy); font-weight: 500; }
 .node.inlaw { border-style: dashed; background: transparent; }
 .node.here { border-color: var(--paddy); box-shadow: 0 0 0 3px var(--paddy-soft); }
 

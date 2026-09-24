@@ -52,7 +52,7 @@ const sources = readYaml(path.join(DATA, 'sources.yaml')) ?? {};
 // ---------- validate ----------
 
 const PERSON_KEYS = new Set(['id', 'name', 'alias', 'gender', 'born', 'died', 'deceased', 'birthplace',
-  'sahi', 'occupation', 'note', 'sources', 'photo']);
+  'sahi', 'occupation', 'note', 'sources', 'photo', 'married_into']);
 const FAMILY_KEYS = new Set(['id', 'partners', 'children', 'married', 'note', 'sources']);
 // Guard against personal data that must never be published.
 const SENSITIVE = /phone|mobile|aadha?ar|e-?mail|address|^pan(_|$)|bank|account|password|voter/i;
@@ -94,6 +94,7 @@ for (const p of Object.values(people)) {
     warn(w, `born ${p.born.year} and no death recorded — add "died: { year: … }" or "deceased: true"`);
   }
   if (p.birthplace != null && !places[p.birthplace]) err(w, `birthplace "${p.birthplace}" is not in data/places.yaml`);
+  if (p.married_into != null && !places[p.married_into]) err(w, `married_into "${p.married_into}" is not in data/places.yaml`);
   const srcs = refList(p.sources);
   if (srcs === null) err(w, 'sources must be a list, e.g. [S001]');
   else for (const s of srcs) if (!sources[s]) err(w, `source "${s}" is not in data/sources.yaml`);
@@ -233,6 +234,7 @@ function toGedcom() {
     }
     if (p.occupation) L.push(`1 OCCU ${oneLine(p.occupation)}`);
     if (p.note) L.push(`1 NOTE ${oneLine(p.note)}`);
+    if (p.married_into) L.push(`1 NOTE Married into ${places[p.married_into].en}`);
     if (parentFamilyOf[p.id]) L.push(`1 FAMC @${parentFamilyOf[p.id]}@`);
     for (const f of familiesOf[p.id] ?? []) L.push(`1 FAMS @${f}@`);
   }

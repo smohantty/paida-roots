@@ -59,7 +59,18 @@ children: [P0014, P0015]
 
 ### Daughters
 
-Record daughters by **first name only** (e.g. `en: Lata`), listed as children in their parents' family file. Once married, a daughter belongs to her husband's village and family history, so we don't add her husband or children here.
+Record daughters by **first name only** (e.g. `en: Lata`), listed as children in their parents' family file. Once married, a daughter belongs to her husband's village and family history, so we don't add her husband or children here. We do record **which village she married into**:
+
+```yaml
+id: P0049
+name:
+  en: Sasmita
+alias: [Susha]
+gender: F
+married_into: tarakota     # a key from data/places.yaml
+```
+
+It appears on her page as "Married into: Tarakota" and in small text under her name in the tree.
 
 Wives who married **into** Paida are recorded in full. Until her name is known, use a placeholder: `en: Wife of <husband's name>` with `note: Name not recorded yet.`
 

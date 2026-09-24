@@ -83,7 +83,8 @@
   const node = (id, extra = '') => {
     const p = P(id);
     return `<a class="node g-${esc(p.gender || 'U')} ${extra}" href="#/person/${id}">${avatar(p)}
-      <span class="tx"><span class="nm">${esc(nm(p))}</span><span class="yr">${esc(lifespan(p))}</span></span></a>`;
+      <span class="tx"><span class="nm">${esc(nm(p))}</span><span class="yr">${esc(lifespan(p))}</span>${
+        p.married_into ? `<span class="went" title="Married into ${esc(place(p.married_into))}">→ ${esc(place(p.married_into))}</span>` : ''}</span></a>`;
   };
   // A spouse whose real name isn't known yet, recorded as "Wife of …" / "Husband of …".
   const unnamed = (p) => /^(wife|husband) of /i.test(p.name.en) && !p.name.or;
@@ -267,6 +268,8 @@
 
   function marriageBlocks(id) {
     const ms = marriages(id);
+    // A daughter who married out: her new family's history lives in her husband's village.
+    if (!ms.length && P(id).married_into) return '';
     if (ms.length <= 1) {
       return `<div class="rel"><h3>Married to</h3>${nodes(ms[0]?.spouse ? [ms[0].spouse] : [])}</div>
         <div class="rel"><h3>Children</h3>${nodes(ms[0]?.family.children ?? [])}</div>`;
@@ -294,6 +297,7 @@
     const facts = [
       ['Born', [fmtDate(p.born), place(p.birthplace)].filter(Boolean).join(', in ')],
       ['Died', p.died ? fmtDate(p.died) : p.deceased ? 'Date not known' : ''],
+      ['Married into', place(p.married_into)],
       ['Sahi', p.sahi],
       ['Work', p.occupation],
       ['Also called', (p.alias || []).join(', ')],
