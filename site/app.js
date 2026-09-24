@@ -5,6 +5,8 @@
   let D; // the data
   let lang = 'en';
   try { lang = localStorage.getItem('lang') || 'en'; } catch {}
+  let zoom = 1;
+  let treeAnimated = false;
 
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const P = (id) => D.people[id];
@@ -12,16 +14,21 @@
   const altNm = (p) => (lang === 'or' ? p.name.en : p.name.or) || '';
   const yr = (d) => (d?.year ? (d.approx ? 'c. ' : '') + d.year : '');
   const lifespan = (p) => {
-    if (p.living) return p.born?.year ? `b. ${yr(p.born)}` : '';
+    if (p.living) return p.born?.year ? `Born ${yr(p.born)}` : '';
     if (!p.born?.year && !p.died?.year) return '';
     return `${yr(p.born) || '?'} – ${yr(p.died) || '?'}`;
   };
   const fmtDate = (d) => {
     if (!d?.year) return '';
     const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return (d.approx ? 'about ' : '') + [d.day, d.month && M[d.month - 1], d.year].filter(Boolean).join(' ');
+    return (d.approx ? 'About ' : '') + [d.day, d.month && M[d.month - 1], d.year].filter(Boolean).join(' ');
   };
   const place = (key) => (key && D.places[key] ? (lang === 'or' && D.places[key].or) || D.places[key].en : '');
+  const segmenter = 'Segmenter' in Intl ? new Intl.Segmenter() : null;
+  const initial = (p) => {
+    const s = nm(p).trim();
+    return segmenter ? segmenter.segment(s)[Symbol.iterator]().next().value?.segment ?? '' : s[0];
+  };
 
   // ---- relationships ----
   const parents = (id) => (P(id).parentFamily ? D.families[P(id).parentFamily].partners : []);
@@ -56,126 +63,232 @@
     return out.sort(byBirth);
   };
 
-  const card = (id, extra = '') => {
+  const avatar = (p) => `<span class="av g-${esc(p.gender || 'U')}" aria-hidden="true">${esc(initial(p))}</span>`;
+  const node = (id, extra = '') => {
     const p = P(id);
-    return `<a class="card g-${esc(p.gender || 'U')} ${extra}" href="#/person/${id}">
-      <span class="nm">${esc(nm(p))}</span><span class="yr">${esc(lifespan(p))}</span></a>`;
+    return `<a class="node g-${esc(p.gender || 'U')} ${extra}" href="#/person/${id}">${avatar(p)}
+      <span class="tx"><span class="nm">${esc(nm(p))}</span><span class="yr">${esc(lifespan(p))}</span></span></a>`;
+  };
+  const nodes = (ids) => (ids.length
+    ? `<div class="nodes">${[...ids].sort(byBirth).map((x) => node(x)).join('')}</div>`
+    : '<p class="none">Not recorded yet</p>');
+  const icon = {
+    down: '<svg viewBox="0 0 24 24"><path d="M12 4v10m0 0-4-4m4 4 4-4M5 20h14"/></svg>',
+    tree: '<svg viewBox="0 0 24 24"><path d="M12 21v-8m0 0-5-5m5 5 5-5M7 8V4m10 4V4"/></svg>',
   };
 
   // ---- views ----
   function viewTree(rootId) {
     const roots = rootPeople();
-    if (!roots.length) return (app.innerHTML = '<p>No families yet. Add some in <code>data/families/</code>.</p>');
+    if (!roots.length) {
+      app.innerHTML = '<div class="page-head"><h1>No families yet</h1><p>Add a family file in <code>data/families/</code> and rebuild the site.</p></div>';
+      return;
+    }
     rootId = rootId && P(rootId) ? rootId : roots[0];
     const seen = new Set();
-    const node = (id) => {
-      if (seen.has(id)) return `<li>${card(id)}</li>`;
+    const branch = (id, depth) => {
+      if (seen.has(id)) return `<li style="--d:${depth}"><div class="couple">${node(id)}</div></li>`;
       seen.add(id);
-      const sp = spouses(id);
+      const couple = [node(id), ...spouses(id).map((s) => `<span class="tie"></span>${node(s, 'inlaw')}`)].join('');
       const kids = children(id).sort(byBirth);
-      const couple = [card(id), ...sp.map((s) => `<span class="amp">&amp;</span>${card(s, 'inlaw')}`)].join('');
-      return `<li><div class="couple">${couple}</div>${kids.length ? `<ul>${kids.map(node).join('')}</ul>` : ''}</li>`;
+      return `<li style="--d:${depth}"><div class="couple">${couple}</div>${kids.length ? `<ul>${kids.map((k) => branch(k, depth + 1)).join('')}</ul>` : ''}</li>`;
     };
-    const options = [...new Set([...roots, rootId])].map((r) =>
-      `<option value="${r}" ${r === rootId ? 'selected' : ''}>${esc(nm(P(r)))}${spouses(r).length ? ' & ' + esc(nm(P(spouses(r)[0]))) : ''}</option>`).join('');
+    const everyone = Object.values(D.people);
+    const gens = Math.max(...everyone.map((p) => p.generation));
+    const earliest = Math.min(...everyone.map((p) => p.born?.year ?? 9999));
+    const options = [...new Set([...roots, rootId])].map((r) => {
+      const sp = spouses(r)[0];
+      return `<option value="${r}" ${r === rootId ? 'selected' : ''}>${esc(nm(P(r)))}${sp ? ' and ' + esc(nm(P(sp))) : ''}</option>`;
+    }).join('');
+
     app.innerHTML = `
-      <div class="tree-bar">
-        <h1>Family tree</h1>
-        <label class="muted" for="root">Start from</label>
+      <section class="intro">
+        <h1 class="wordmark" lang="or">ପାଇଡ଼ା</h1>
+        <div>
+          <p class="lede">The families of Paida village, from the oldest ancestors anyone remembers to the children born today.</p>
+          <p class="meta">${everyone.length} people across ${gens} generations${earliest < 9999 ? `, going back to ${earliest}` : ''}.</p>
+        </div>
+      </section>
+      <div class="stage-bar">
+        <label for="root">Start from</label>
         <select id="root">${options}</select>
+        <div class="zoom" role="group" aria-label="Zoom">
+          <button class="icon-btn" type="button" data-zoom="-1" aria-label="Zoom out">−</button>
+          <button class="icon-btn" type="button" data-zoom="0">Fit</button>
+          <button class="icon-btn" type="button" data-zoom="1" aria-label="Zoom in">+</button>
+        </div>
       </div>
-      <div class="tree-wrap"><div class="tree"><ul>${node(rootId)}</ul></div></div>
+      <div class="stage ${treeAnimated ? '' : 'animate'}" tabindex="0" aria-label="Family tree. Drag or scroll to move around.">
+        <div class="tree"><ul>${branch(rootId, 0)}</ul></div>
+      </div>
       <div class="legend">
-        <span><i style="background:var(--male)"></i>Male</span>
-        <span><i style="background:var(--female)"></i>Female</span>
-        <span>Dashed card = married into the family</span>
-        <span>Click anyone to see their details</span>
+        <span><i style="background:var(--indigo)"></i>Male</span>
+        <span><i style="background:var(--sindoor)"></i>Female</span>
+        <span><i class="dash"></i>Married into the family</span>
+        <span>Drag to move around, and tap anyone to open their page.</span>
       </div>`;
+    treeAnimated = true;
+
+    const stage = app.querySelector('.stage');
+    const tree = app.querySelector('.tree');
+    const center = () => { stage.scrollLeft = (stage.scrollWidth - stage.clientWidth) / 2; };
+    const setZoom = (z) => { zoom = Math.min(1.6, Math.max(0.35, z)); tree.style.zoom = zoom; center(); };
+    const fit = () => {
+      tree.style.zoom = 1;
+      setZoom(Math.min(1, (stage.clientWidth - 8) / tree.scrollWidth, (stage.clientHeight - 8) / tree.scrollHeight));
+    };
+    setZoom(zoom);
+    app.querySelector('.zoom').onclick = (e) => {
+      const b = e.target.closest('[data-zoom]');
+      if (!b) return;
+      const step = Number(b.dataset.zoom);
+      step === 0 ? fit() : setZoom(zoom + step * 0.15);
+    };
     document.getElementById('root').onchange = (e) => (location.hash = `#/tree/${e.target.value}`);
-    // Centre the scroll on the top of the tree.
-    const wrap = app.querySelector('.tree-wrap');
-    wrap.scrollLeft = (wrap.scrollWidth - wrap.clientWidth) / 2;
+
+    stage.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      drag = { stage, x: e.clientX, y: e.clientY, left: stage.scrollLeft, top: stage.scrollTop, moved: false };
+    });
   }
+
+  // Drag to pan the tree with a mouse; touch screens already pan natively.
+  let drag = null;
+  window.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x;
+    const dy = e.clientY - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+    drag.moved = true;
+    drag.stage.classList.add('dragging');
+    drag.stage.scrollLeft = drag.left - dx;
+    drag.stage.scrollTop = drag.top - dy;
+  });
+  window.addEventListener('pointerup', () => {
+    if (!drag) return;
+    // A drag should not also count as a click on the person under the cursor.
+    if (drag.moved) {
+      const stage = drag.stage;
+      const swallow = (e) => e.preventDefault();
+      stage.addEventListener('click', swallow, { capture: true });
+      setTimeout(() => stage.removeEventListener('click', swallow, { capture: true }));
+    }
+    drag.stage.classList.remove('dragging');
+    drag = null;
+  });
 
   function viewPerson(id) {
     const p = P(id);
-    if (!p) return (app.innerHTML = '<p>Person not found.</p>');
-    const chips = (ids) => (ids.length ? `<div class="chips">${ids.sort(byBirth).map((x) => card(x)).join('')}</div>` : '<span class="muted">Not recorded</span>');
+    if (!p) {
+      app.innerHTML = '<div class="page-head"><h1>Person not found</h1><p>This link may be out of date. Use search to find them.</p></div>';
+      return;
+    }
     const facts = [
-      ['Born', [fmtDate(p.born), place(p.birthplace)].filter(Boolean).join(', ')],
-      ['Died', p.died ? fmtDate(p.died) : p.deceased ? 'Yes (date unknown)' : ''],
+      ['Born', [fmtDate(p.born), place(p.birthplace)].filter(Boolean).join(', in ')],
+      ['Died', p.died ? fmtDate(p.died) : p.deceased ? 'Date not known' : ''],
       ['Sahi', p.sahi],
-      ['Occupation', p.occupation],
+      ['Work', p.occupation],
       ['Also called', (p.alias || []).join(', ')],
       ['Generation', p.generation],
     ].filter(([, v]) => v);
     const srcs = (p.sources || []).map((s) => D.sources[s]).filter(Boolean);
     const line = lineage(id);
+    const alt = altNm(p);
+    const altIsOdia = lang !== 'or';
     app.innerHTML = `
-      ${line.length > 1 ? `<div class="crumbs">${line.map((x) => x === id ? esc(nm(P(x))) : `<a href="#/person/${x}">${esc(nm(P(x)))}</a>`).join(' › ')}</div>` : ''}
-      <div class="person-head">
-        <h1>${esc(nm(p))}</h1>
-        ${altNm(p) ? `<div class="alt">${esc(altNm(p))}</div>` : ''}
-        <div class="muted">${esc(lifespan(p))}</div>
-      </div>
+      ${line.length > 1 ? `<nav class="descent" aria-label="Line of descent"><span class="lbl">Line of descent</span>
+        ${line.map((x) => (x === id
+          ? `<b>${avatar(P(x))}${esc(nm(P(x)))}</b>`
+          : `<a href="#/person/${x}">${avatar(P(x))}${esc(nm(P(x)))}</a><span class="step"></span>`)).join('')}
+      </nav>` : ''}
+      <header class="phead g-${esc(p.gender || 'U')}">
+        ${avatar(p)}
+        <div>
+          <h1>${esc(nm(p))}</h1>
+          ${alt ? `<p class="alt ${altIsOdia ? '' : 'en'}" ${altIsOdia ? 'lang="or"' : ''}>${esc(alt)}</p>` : ''}
+          <p class="life">${esc(lifespan(p))}</p>
+        </div>
+      </header>
       <div class="actions">
-        ${children(id).length ? `<a class="btn" href="#/tree/${id}">Show descendants</a>` : ''}
-        ${line.length > 1 ? `<a class="btn ghost" href="#/tree/${line[0]}">Show whole family</a>` : ''}
+        ${children(id).length ? `<a class="btn" href="#/tree/${id}">${icon.down}Show descendants</a>` : ''}
+        ${line.length > 1 ? `<a class="btn quiet" href="#/tree/${line[0]}">${icon.tree}Show whole family</a>` : ''}
       </div>
-      <div class="grid">
-        <section class="panel">
-          <h2>About</h2>
+      <div class="pbody">
+        <section>
+          <h2>Life</h2>
           ${p.photo ? `<img class="photo" src="media/${esc(p.photo)}" alt="${esc(nm(p))}">` : ''}
-          ${facts.length ? `<dl class="facts">${facts.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>` : ''}
-          ${p.note ? `<p>${esc(p.note)}</p>` : ''}
+          ${facts.length ? `<dl class="facts">${facts.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}
+          ${p.note ? `<p class="note">${esc(p.note)}</p>` : ''}
         </section>
-        <section class="panel rel">
-          <h2>Family</h2>
-          <h3>Parents</h3>${chips(parents(id))}
-          <h3>Spouse</h3>${chips(spouses(id))}
-          <h3>Children</h3>${chips(children(id))}
-          <h3>Brothers &amp; sisters</h3>${chips(siblings(id))}
+        <section class="family" aria-label="Family">
+          <div class="rel"><h3>Parents</h3>${nodes(parents(id))}</div>
+          <div class="rel"><h3>Married to</h3>${nodes(spouses(id))}</div>
+          <div class="rel"><h3>Children</h3>${nodes(children(id))}</div>
+          <div class="rel"><h3>Brothers and sisters</h3>${nodes(siblings(id))}</div>
         </section>
-        ${srcs.length ? `<section class="panel"><h2>Sources</h2><ul>${srcs.map((s) =>
-          `<li>${esc(s.title)}${s.by ? ` — told by ${esc(s.by)}` : ''}${s.date ? `, ${esc(s.date)}` : ''}</li>`).join('')}</ul></section>` : ''}
-      </div>`;
+      </div>
+      ${srcs.length ? `<section class="sources"><h2>Where this comes from</h2><ul>${srcs.map((s) =>
+        `<li>${esc(s.title)}${s.by ? `, told by ${esc(s.by)}` : ''}${s.date ? ` (${esc(s.date)})` : ''}</li>`).join('')}</ul></section>` : ''}`;
   }
 
   function viewPeople() {
     const gens = {};
-    for (const p of Object.values(D.people)) (gens[p.generation] ??= []).push(p.id);
-    app.innerHTML = `<h1>Everyone</h1><p class="muted">${Object.keys(D.people).length} people, grouped by generation (1 = oldest known).</p>` +
-      Object.keys(gens).sort((a, b) => a - b).map((g) =>
-        `<section class="gen"><h2>Generation ${g}</h2><div class="chips">${gens[g].sort(byBirth).map((x) => card(x)).join('')}</div></section>`).join('');
+    for (const p of Object.values(D.people)) (gens[p.generation] ??= []).push(p);
+    const total = Object.keys(D.people).length;
+    app.innerHTML = `
+      <header class="page-head">
+        <h1>Everyone</h1>
+        <p>${total} people across ${Object.keys(gens).length} generations. Generation 1 is the oldest the family remembers.</p>
+      </header>
+      <ol class="gens">${Object.keys(gens).sort((a, b) => a - b).map((g) => {
+        const years = gens[g].map((p) => p.born?.year).filter(Boolean);
+        const range = years.length ? `Born ${Math.min(...years)}${Math.max(...years) !== Math.min(...years) ? `–${Math.max(...years)}` : ''}` : '';
+        return `<li class="gen">
+          <div class="gen-rail"><h2>Generation ${g}</h2><p>${range}</p></div>
+          ${nodes(gens[g].map((p) => p.id))}
+        </li>`;
+      }).join('')}</ol>`;
   }
+
+  const excerpt = (html) => {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const para = [...doc.querySelectorAll('p')].find((el) => !el.closest('blockquote'));
+    const text = (para?.textContent || '').replace(/_/g, '').trim();
+    return text.length > 180 ? text.slice(0, 177).trimEnd() + '…' : text;
+  };
 
   function viewStories(slug) {
     const s = D.stories.find((x) => x.slug === slug);
-    if (s) return (app.innerHTML = `<article class="story"><div class="crumbs"><a href="#/stories">Stories</a></div><h1>${esc(s.title)}</h1>${s.html}</article>`);
-    app.innerHTML = `<h1>Stories of Paida</h1>
-      <ul class="story-list">${D.stories.map((x) => `<li><a href="#/stories/${esc(x.slug)}">${esc(x.title)}</a></li>`).join('')}</ul>`;
+    if (s) {
+      app.innerHTML = `<article class="prose"><a class="back" href="#/stories">All stories</a><h1>${esc(s.title)}</h1>${s.html}</article>`;
+      return;
+    }
+    app.innerHTML = `
+      <header class="page-head">
+        <h1>Stories of Paida</h1>
+        <p>What the elders remember about how the village began, and how it has lived since.</p>
+      </header>
+      ${D.stories.length
+        ? `<ul class="story-list">${D.stories.map((x) => `<li><a href="#/stories/${esc(x.slug)}"><h2>${esc(x.title)}</h2><p>${esc(excerpt(x.html))}</p></a></li>`).join('')}</ul>`
+        : '<p class="none">No stories yet. Add a Markdown file to the <code>stories/</code> folder.</p>'}`;
   }
 
   function viewAbout() {
     const gens = Math.max(0, ...Object.values(D.people).map((p) => p.generation));
-    app.innerHTML = `<article class="story">
+    app.innerHTML = `<article class="prose">
       <h1>About Paida Roots</h1>
-      <p>Paida Roots records the families of Paida village and the stories of how the village came to be,
-      so this knowledge is not lost when our elders are gone.</p>
-      <div class="stats">
-        <div class="stat"><b>${Object.keys(D.people).length}</b>people</div>
-        <div class="stat"><b>${Object.keys(D.families).length}</b>families</div>
-        <div class="stat"><b>${gens}</b>generations</div>
-        <div class="stat"><b>${D.stories.length}</b>stories</div>
-      </div>
-      <h2>What we record — and what we never do</h2>
-      <p>Names, relationships, the year of birth and death, where people lived and what they did, and stories told by elders.
-      For living people we show only the birth year. We never record phone numbers, Aadhaar, addresses or any other private details.</p>
-      <h2>Can I add my family, or correct something?</h2>
-      <p>Yes, please. Speak to the maintainer with the names, relationships and years you know, and who told you.</p>
+      <p>Paida Roots records the families of Paida village and the story of how the village came to be.
+      When our elders are gone, what they remember goes with them unless someone writes it down. This is where we write it down.</p>
+      <p class="counts">So far: <b>${Object.keys(D.people).length}</b> people, <b>${Object.keys(D.families).length}</b> families,
+      <b>${gens}</b> generations and <b>${D.stories.length}</b> ${D.stories.length === 1 ? 'story' : 'stories'}.</p>
+      <h2>What we record, and what we never do</h2>
+      <p>We record names, relationships, years of birth and death, where people lived, the work they did, and the stories elders tell.
+      For living people we show only the year of birth. We never record phone numbers, Aadhaar, addresses or any other private details.</p>
+      <h2>Adding your family or correcting something</h2>
+      <p>Please do. Tell the maintainer the names, relationships and years you know, and who told you. Even a partial memory helps.</p>
       <h2>Download</h2>
-      <p><a href="paida-roots.ged" download>Family tree (GEDCOM)</a> — opens in Gramps, FamilySearch, Ancestry and other family-tree software.<br>
-      <a href="data.json" download>All data (JSON)</a></p>
+      <p><a href="paida-roots.ged" download>The family tree as a GEDCOM file</a> opens in Gramps, FamilySearch, Ancestry and most other family-tree software.
+      You can also download <a href="data.json" download>all the data as JSON</a>.</p>
     </article>`;
   }
 
@@ -188,8 +301,8 @@
     const hits = Object.values(D.people).filter((p) =>
       [p.name.en, p.name.or, ...(p.alias || [])].some((s) => s && s.toLowerCase().includes(t))).slice(0, 8);
     results.innerHTML = hits.length
-      ? hits.map((p) => `<li><a href="#/person/${p.id}">${esc(nm(p))} <small>${esc(lifespan(p))}</small></a></li>`).join('')
-      : '<li class="muted" style="padding:6px 8px">No match</li>';
+      ? hits.map((p) => `<li><a class="g-${esc(p.gender || 'U')}" href="#/person/${p.id}">${avatar(p)}<span class="tx"><span>${esc(nm(p))}</span><br><small class="muted">${esc(lifespan(p))}</small></span></a></li>`).join('')
+      : `<li class="empty">No one called “${esc(q.value.trim())}” yet</li>`;
     results.hidden = false;
   });
   q.addEventListener('keydown', (e) => {
@@ -202,25 +315,30 @@
   });
 
   // ---- language ----
-  const langBtn = document.getElementById('lang');
-  const setLangLabel = () => (langBtn.textContent = lang === 'or' ? 'English' : 'ଓଡ଼ିଆ');
-  langBtn.onclick = () => {
-    lang = lang === 'or' ? 'en' : 'or';
+  const langBtns = document.querySelectorAll('.lang button');
+  const syncLang = () => langBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
+  langBtns.forEach((b) => (b.onclick = () => {
+    if (lang === b.dataset.lang) return;
+    lang = b.dataset.lang;
     try { localStorage.setItem('lang', lang); } catch {}
-    setLangLabel();
-    route();
-  };
+    syncLang();
+    route(false);
+  }));
 
   // ---- router ----
-  function route() {
+  function route(scrollTop = true) {
     const [, view = '', arg] = (location.hash || '#/').split('/');
-    document.querySelectorAll('nav a').forEach((a) => a.classList.toggle('active', a.dataset.nav === (view || 'tree')));
+    document.querySelectorAll('.tabs a').forEach((a) => {
+      const on = a.dataset.nav === (view || 'tree');
+      a.classList.toggle('active', on);
+      on ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current');
+    });
     if (view === 'person') viewPerson(arg);
     else if (view === 'people') viewPeople();
     else if (view === 'stories') viewStories(arg && decodeURIComponent(arg));
     else if (view === 'about') viewAbout();
     else viewTree(arg);
-    window.scrollTo(0, 0);
+    if (scrollTop) window.scrollTo(0, 0);
   }
 
   fetch('data.json')
@@ -228,9 +346,11 @@
     .then((data) => {
       D = data;
       document.getElementById('updated').textContent = `Last updated ${D.generated}.`;
-      setLangLabel();
-      window.addEventListener('hashchange', route);
+      syncLang();
+      window.addEventListener('hashchange', () => route());
       route();
     })
-    .catch(() => (app.innerHTML = '<p>Could not load the family data. Run <code>npm run build</code> first.</p>'));
+    .catch(() => {
+      app.innerHTML = '<div class="page-head"><h1>The family data did not load</h1><p>Run <code>npm run build</code>, then reload this page.</p></div>';
+    });
 })();
