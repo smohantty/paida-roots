@@ -1,10 +1,4 @@
-# SAMPLE DATA — shows a man who remarried after his first wife died.
 id: P0007
 name:
-  en: Bijay Das
-  or: ବିଜୟ ଦାସ
-gender: M
-born: { year: 1940 }
-died: { year: 2010 }
-occupation: Priest at the village temple
-note: Married again after his first wife Lakshmi died in 1970.
+  en: Jyotsnamayeee Mohanty
+gender: U

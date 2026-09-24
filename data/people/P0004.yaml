@@ -1,10 +1,5 @@
-# SAMPLE DATA
 id: P0004
 name:
-  en: Sabitri Das
-  or: ସାବିତ୍ରୀ ଦାସ
+  en: Basanta mohanty
 gender: F
-born: { year: 1938, approx: true }
-died: { year: 2015 }
-birthplace: balasore
-sources: [S001]
+birthplace: siha

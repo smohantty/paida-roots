@@ -1,5 +1,0 @@
-# SAMPLE DATA — Bijay's first marriage.
-id: F0005
-partners: [P0007, P0012]
-married: { year: 1962 }
-children: [P0013]

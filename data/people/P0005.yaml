@@ -1,10 +1,5 @@
-# SAMPLE DATA
 id: P0005
 name:
-  en: Radha Mishra
-  or: ରାଧା ମିଶ୍ର
+  en: Swetaprabha Mohanty
 gender: F
-born: { year: 1935 }
-died: { year: 1999 }
-note: Married and moved to Balasore.
-sources: [S001]
+birthplace: chheda

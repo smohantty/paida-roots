@@ -1,8 +1,4 @@
-# SAMPLE DATA
 id: P0012
 name:
-  en: Lakshmi Das
-  or: ଲକ୍ଷ୍ମୀ ଦାସ
+  en: Rama Mohanty Wife
 gender: F
-born: { year: 1944, approx: true }
-died: { year: 1970 }

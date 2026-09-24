@@ -1,10 +1,7 @@
-# SAMPLE DATA
 id: P0002
 name:
-  en: Kamala Das
-  or: କମଳା ଦାସ
+  en: Sabitri Mohanty
 gender: F
-born: { year: 1910, approx: true }
-died: { year: 1985 }
-birthplace: nuagaon
-sources: [S001]
+born: { year: 1905, approx: true }
+died: { year: 1960 }
+birthplace: paikarapur

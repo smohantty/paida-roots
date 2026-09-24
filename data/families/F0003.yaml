@@ -1,5 +1,0 @@
-# SAMPLE DATA
-id: F0003
-partners: [P0005, P0006]
-married: { year: 1954, approx: true }
-children: []

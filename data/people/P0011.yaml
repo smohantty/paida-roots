@@ -1,7 +1,4 @@
-# SAMPLE DATA
 id: P0011
 name:
-  en: Amit Das
-  or: ଅମିତ ଦାସ
+  en: Rama Mohanty
 gender: M
-born: { year: 1992 }
