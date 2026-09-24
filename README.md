@@ -4,9 +4,6 @@
 
 This repository is the permanent record. It holds a family tree covering the last 4–5 generations (and further back where anyone still remembers), the story of how the village began, and the sources for each fact. The website is built automatically from it.
 
-> ⚠️ The people in `data/` right now are **fictional sample data**, there only to show the format.
-> Delete them (`data/people/*`, `data/families/*`) before adding your real family.
-
 ## Rules
 
 1. **Never store** phone numbers, Aadhaar, addresses, email, bank, PAN or voter details. The build refuses these fields.

@@ -85,6 +85,15 @@
     return `<a class="node g-${esc(p.gender || 'U')} ${extra}" href="#/person/${id}">${avatar(p)}
       <span class="tx"><span class="nm">${esc(nm(p))}</span><span class="yr">${esc(lifespan(p))}</span></span></a>`;
   };
+  // A spouse whose real name isn't known yet, recorded as "Wife of …" / "Husband of …".
+  const unnamed = (p) => /^(wife|husband) of /i.test(p.name.en) && !p.name.or;
+  // In the tree, an unnamed spouse is a small tag so placeholders don't crowd the family.
+  const spouseNode = (id) => {
+    const p = P(id);
+    if (!unnamed(p)) return node(id, 'inlaw');
+    const label = p.name.en.split(' ')[0];
+    return `<a class="node inlaw tag g-${esc(p.gender || 'U')}" href="#/person/${id}" title="${esc(p.name.en)} (name not recorded yet)">${esc(label)}</a>`;
+  };
   const nodes = (ids) => (ids.length
     ? `<div class="nodes">${[...ids].sort(byBirth).map((x) => node(x)).join('')}</div>`
     : '<p class="none">Not recorded yet</p>');
@@ -110,7 +119,7 @@
       if (ms.length <= 1) {
         // One marriage: show the couple side by side with their children below.
         const sp = ms[0]?.spouse;
-        const couple = node(id) + (sp ? `<span class="tie"></span>${node(sp, 'inlaw')}` : '');
+        const couple = node(id) + (sp ? `<span class="tie"></span>${spouseNode(sp)}` : '');
         return `<li style="--d:${depth}"><div class="couple">${couple}</div>${kidsList(ms[0]?.family.children ?? [], depth + 1)}</li>`;
       }
       // Several marriages: branch into each spouse, with that marriage's children under them.
@@ -118,7 +127,7 @@
         <li style="--d:${depth}" class="union">
           <div class="couple"><div class="union-box">
             <span class="union-tag">${ORD[i] ?? `${i + 1}th`} ${spouseWord(spouse)}${family.married?.year ? `, m. ${yr(family.married)}` : ''}</span>
-            ${spouse ? node(spouse, 'inlaw') : '<span class="node inlaw unknown">Not recorded</span>'}
+            ${spouse ? spouseNode(spouse) : '<span class="node inlaw unknown">Not recorded</span>'}
           </div></div>
           ${kidsList(family.children, depth + 1)}
         </li>`).join('');

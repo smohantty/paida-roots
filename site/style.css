@@ -183,7 +183,7 @@ select { max-width: 100%; }
   cursor: grab; touch-action: pan-x pan-y;
 }
 .stage.dragging { cursor: grabbing; user-select: none; }
-.tree { display: inline-block; min-width: 100%; padding: var(--s6) var(--s5); }
+.tree { display: inline-block; width: max-content; min-width: 100%; padding: var(--s6) var(--s5); }
 .tree ul { display: flex; justify-content: center; margin: 0; padding: 28px 0 0; position: relative; }
 .tree > ul { padding-top: 0; }
 .tree li { flex: none; list-style: none; position: relative; padding: 28px 10px 0; text-align: center; }
@@ -329,3 +329,11 @@ select { max-width: 100%; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Unnamed spouse placeholder in the tree */
+.node.tag {
+  min-width: 0; padding: 4px 12px; gap: 0;
+  font-size: .78rem; font-weight: 600; color: var(--muted);
+}
+.node.tag.g-F { color: var(--sindoor); }
+.node.tag.g-M { color: var(--indigo); }
